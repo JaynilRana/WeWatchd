@@ -1,9 +1,9 @@
 function Landing() {
   return (
-    <section className="min-h-screen bg-gradient-to-b from-black via-gray-500 to-white text-black">
+    <section className="min-h-screen bg-linear-to-b from-black via-gray-500 to-white text-black">
 
       {/* HERO DIV */}
-      <div className="min-h-screen flex items-center justify-center text-center px-6">
+      <div className="min-h-screen pt-32 flex items-center justify-center text-center px-6">
         <div className="max-w-3xl">
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6 drop-shadow-lg text-amber-50" >
             Track films you’ve watched.
