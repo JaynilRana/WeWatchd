@@ -12,7 +12,7 @@ function Films() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [genres, setGenres] = useState([]);
-  const [sortBy, setSortBy] = useState('popularity.desc');
+  const [sortBy, setSortBy] = useState('vote_average.desc');
   const [selectedGenre, setSelectedGenre] = useState('');
   const [selectedDecade, setSelectedDecade] = useState('');
   const [selectedService, setSelectedService] = useState('');
@@ -33,26 +33,29 @@ function Films() {
     const fetchMovies = async () => {
       setLoading(true);
       try {
-        let url;
-        if (sortBy === 'vote_average.desc') {
-          url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&page=${currentPage}&sort_by=${sortBy}&vote_count.gte=300`;
-        } else {
-          url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&page=${currentPage}&sort_by=${sortBy}&vote_count.gte=300`;
-          if (sortBy === 'release_date.desc') {
-            const today = new Date().toISOString().split('T')[0];
-            url += `&primary_release_date.lte=${today}`;
-          }
+        const tmdbPage1 = (currentPage - 1) * 2 + 1;
+        const tmdbPage2 = tmdbPage1 + 1;
+        let baseUrl = `${BASE_URL}/discover/movie?api_key=${API_KEY}&sort_by=${sortBy}&vote_count.gte=300`;
+        if (sortBy === 'release_date.desc') {
+          const today = new Date().toISOString().split('T')[0];
+          baseUrl += `&primary_release_date.lte=${today}`;
         }
-        if (selectedGenre) url += `&with_genres=${selectedGenre}`;
+        if (selectedGenre) baseUrl += `&with_genres=${selectedGenre}`;
         if (selectedDecade) {
           const startYear = selectedDecade;
           const endYear = (parseInt(selectedDecade) + 9).toString();
-          url += `&primary_release_date.gte=${startYear}-01-01&primary_release_date.lte=${endYear}-12-31`;
+          baseUrl += `&primary_release_date.gte=${startYear}-01-01&primary_release_date.lte=${endYear}-12-31`;
         }
-        if (selectedService) url += `&with_watch_providers=${selectedService}&watch_region=US`;
-        const response = await axios.get(url);
-        setMovies(response.data.results);
-        setTotalPages(response.data.total_pages);
+        if (selectedService) baseUrl += `&with_watch_providers=${selectedService}&watch_region=US`;
+        const url1 = `${baseUrl}&page=${tmdbPage1}`;
+        const url2 = `${baseUrl}&page=${tmdbPage2}`;
+        const [res1, res2] = await Promise.all([
+          axios.get(url1),
+          axios.get(url2)
+        ]);
+        const combinedMovies = [...res1.data.results, ...res2.data.results];
+        setMovies(combinedMovies);
+        setTotalPages(Math.ceil(res1.data.total_pages / 2));
         setError(null);
       } catch (err) {
         setError('Failed to load movies. Please try again.');
@@ -67,6 +70,14 @@ function Films() {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
+  };
+
+  const resetFilters = () => {
+    setSortBy('vote_average.desc');
+    setSelectedGenre('');
+    setSelectedDecade('');
+    setSelectedService('');
+    setCurrentPage(1);
   };
 
   const renderPageNumbers = () => {
@@ -103,7 +114,7 @@ function Films() {
   ];
 
   return (
-    <section className="min-h-screen bg-black text-white px-8 py-12">
+    <section className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white px-8 py-4 -mt-4">
       <h1 className="text-3xl font-bold mb-8 text-center">Films</h1>
       
       {/* Filters */}
@@ -125,17 +136,20 @@ function Films() {
           <option value="">All Services</option>
           {services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)}
         </select>
+        <button onClick={resetFilters} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+          Reset Filters
+        </button>
       </div>
       
       {error && <p className="text-red-500 text-center">{error}</p>}
       
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 max-w-7xl mx-auto">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 max-w-7xl mx-auto">
         {movies.map((movie) => (
           <div key={movie.id} className="bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform">
             <img 
               src={movie.poster_path ? `${IMAGE_BASE_URL}${movie.poster_path}` : '/placeholder.jpg'} 
               alt={movie.title} 
-              className="w-full h-64 object-cover" 
+              className="w-full h-48 object-cover" 
             />
             <div className="p-4">
               <h2 className="text-sm font-semibold truncate">{movie.title}</h2>
@@ -144,6 +158,10 @@ function Films() {
           </div>
         ))}
       </div>
+      
+      {!loading && movies.length === 0 && (
+        <p className="text-white text-center mt-8">No match found. Try changing filters.</p>
+      )}
       
       {!loading && totalPages > 1 && (
         <div className="flex justify-center items-center mt-8 space-x-2">
