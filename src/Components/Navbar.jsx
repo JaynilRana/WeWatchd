@@ -12,7 +12,7 @@ function Navbar() {
       </div>
 
       {/* NAV LINKS */}
-      <div className="flex gap-4 items-center">
+      <div className="flex gap-4 items-center mr-23">
         <Link to="/films">  
           <button className="px-3 py-1 rounded-md text-white font-medium transition-all duration-200 ease-out hover:text-green-400 hover:bg-[#1f2329] hover:-translate-y-[1px] focus:outline-none focus:ring-2 focus:ring-green-400/50">
             Films
